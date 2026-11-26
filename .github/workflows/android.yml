@@ -22,22 +22,26 @@ jobs:
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
         with:
           cache-disabled: true
-      - name: Run unit tests, lint, and build the APKs
-        run: ./gradlew --max-workers=2 :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease
       - name: Run tests on an Android emulator
         run: |
           tools=$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' | sort -V | tail -1)
           "$tools" 'emulator' 'system-images;android-30;default;x86_64'
           export PATH="$ANDROID_HOME/platform-tools:$PATH"
+          export ANDROID_USER_HOME="$RUNNER_TEMP/izun-android"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           sudo chown "$USER" /dev/kvm
-          "${tools%/*}/avdmanager" create avd -n izun-tests -k 'system-images;android-30;default;x86_64' <<< no
-          "$ANDROID_HOME/emulator/emulator" @izun-tests -no-window -no-audio -no-snapshot -gpu swiftshader > "$RUNNER_TEMP/izun-emulator.log" 2>&1 &
-          timeout 240 bash -c 'adb wait-for-device; until [[ $(adb shell getprop sys.boot_completed | tr -d "\r") == 1 ]]; do sleep 2; done'
+          "${tools%/*}/avdmanager" create avd -n izun-tests -k 'system-images;android-30;default;x86_64' -d pixel_4 -p "$ANDROID_AVD_HOME/izun-tests.avd" </dev/null
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx izun-tests
+          "$ANDROID_HOME/emulator/emulator" @izun-tests -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader > "$RUNNER_TEMP/izun-emulator.log" 2>&1 &
+          timeout 240 bash -c 'until [[ $(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r") == 1 ]]; do kill -0 "$1" || exit 1; sleep 2; done' _ "$!"
           adb shell input keyevent 82
           adb shell settings put global window_animation_scale 0
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
           ./gradlew --max-workers=2 :app:connectedDebugAndroidTest
+      - name: Run unit tests, lint, and build the release APK
+        run: ./gradlew --max-workers=2 :app:testDebugUnitTest :app:lintDebug :app:assembleRelease
       - name: Print emulator log on failure
         if: failure()
         run: tail -100 "$RUNNER_TEMP/izun-emulator.log" || true
