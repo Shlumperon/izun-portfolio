@@ -4,24 +4,26 @@
 
 # IZUN
 
-IZUN is an Android meal and nutrition tracker that works offline. Log a meal by hand or paste a structured **IZUN Report** into an editable meal card. The app keeps your meal history on the device and can connect to Android Health Connect for activity data and nutrition records.
+**Track calories and nutrition on your Android phone.** IZUN keeps your meal log and profile on the device, so you can log food, check your daily totals, and revisit your history offline.
 
-## What you can do
+For a quicker entry, ask the AI chat app you already use to estimate a meal from a description, photo, or nutrition label. Paste its **IZUN Report** into the app, review the values, and save. You can use an existing AI subscription with this workflow. IZUN requires no separate AI plan, account, or API key.
 
-| Feature | What it does |
-| --- | --- |
-| **Meal logging** | Enter calories and nutrients manually, or paste JSON and review the values before saving. Edit, repeat, or delete meals in History. |
-| **Daily dashboard** | See calorie and nutrient totals, activity summaries, and weight trends. Calculate estimated targets from your profile and available activity data. |
-| **Optional Health Connect** | Read steps, distance, exercise, and active calories with permission. Grant nutrition write access separately in Settings. |
+## A look inside IZUN
 
-## Try a meal import
+| Daily dashboard | Meal editor | Health Connect |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/dashboard.webp" width="240" alt="IZUN Home showing daily calorie and nutrition totals"> | <img src="docs/screenshots/meal-editor.webp" width="240" alt="IZUN meal card with an editable name, calories, and nutrients"> | <img src="docs/screenshots/health-connect.webp" width="240" alt="IZUN Settings showing where to manage Health Connect"> |
 
-1. Build and open IZUN, then complete the profile and the guided demo.
-2. Copy the example JSON below, open **Meal → Add**, and tap **Paste**.
-3. Review the fields, adjust the date to today if you want it on the daily dashboard, and tap **Confirm**. The saved meal appears in **History**.
+The screenshots use fictional meals and a demo profile.
+
+## Log a meal
+
+1. Open **Meal → Add** to enter a meal by hand.
+2. For an AI-assisted estimate, copy the prompt from **Settings → Chat Prompt** and use it in your own chatbot. Copy its **IZUN Report**, then tap **Paste** on the meal card.
+3. Check the portion, calories, and nutrients before saving. In **History**, you can edit, repeat, or delete saved meals.
 
 <details>
-<summary>Sample IZUN Report · fictional meal</summary>
+<summary>Try a sample IZUN Report</summary>
 
 ```json
 {
@@ -39,33 +41,31 @@ IZUN is an Android meal and nutrition tracker that works offline. Log a meal by 
 }
 ```
 
+Set the date to today if you want the sample to appear on today's dashboard.
+
 </details>
 
-**Settings → Copy Chat Prompt** offers another way to prepare a report using a chatbot you open yourself. Review any estimates before saving them.
+## Your data stays on the phone
 
-## Build and run
+IZUN stores meals, weight entries, and profile details in app-private storage. It reads clipboard text when you tap **Paste** and saves the parsed meal fields. The app has no analytics or server. Anything you share with a chatbot is handled under that service’s terms.
 
-Use Android Studio with support for Android Gradle Plugin 9.3, JDK 17, Android SDK Platform 36, and Android SDK Build Tools 36.0.0. Open the repository root in Android Studio and run the `app` configuration on a device or emulator running Android 8.0 (API 26) or later. Health Connect requires a [supported device and setup](https://developer.android.com/health-and-fitness/health-connect/availability).
+**Settings → Manage Health Connect** is the place to grant or manage activity and nutrition permissions. You can choose these during the tutorial or skip them. With permission, IZUN can read activity for its dashboard and write confirmed meals to Health Connect. Android backups and device transfers exclude the app's meal database and preferences. Manage any exported nutrition records separately in Health Connect.
+
+## Behind the app
+
+IZUN is built with Kotlin, Jetpack Compose, Material 3, Navigation 3, and Room. It uses a structured JSON import and calculates [nutrition estimates](docs/nutrition-model.md) on the device.
+
+<details>
+<summary>Build from source</summary>
+
+The app appears as **IZUN** on Android 8.0 (API 26) and newer. Use JDK 17, SDK Platform 36, and Build Tools 36.0.0. For Android Studio, use a version that supports Android Gradle Plugin 9.3.
 
 ```bash
-git clone https://github.com/Shlumperon/izun-portfolio.git
-cd izun-portfolio
+git clone https://github.com/Shlumperon/izun.git
+cd izun
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
-On Windows, use `gradlew.bat` in Command Prompt or `.\gradlew.bat` in PowerShell. The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`. Run device tests with `:app:connectedDebugAndroidTest` while a device or emulator is connected.
+On Windows, use `.\gradlew.bat` in PowerShell. Find the generated APK at `app/build/outputs/apk/debug/app-debug.apk`. With a device connected, run `:app:connectedDebugAndroidTest` for the Android tests.
 
-## How it works
-
-- **UI** — Kotlin, Jetpack Compose, Material 3, and Navigation 3.
-- **Storage** — Room for meal history and Android app-private preferences for profile, weight, and settings. Room schema exports support migration tests.
-- **Import and sync** — `FoodJsonParser` validates supported JSON fields. Meals are written locally before the optional Health Connect write. Stable client record IDs and versions support updates to existing synced meals.
-- **Nutrition estimates** — The [model notes](docs/nutrition-model.md) describe the profile inputs, calorie range, nutrient targets, and guardrails.
-
-## Privacy
-
-IZUN runs without an account, API keys, analytics, or an IZUN server. It reads clipboard text when you tap **Paste** and saves the recognized meal fields in app-private storage. Android backup and device transfer exclude the meal database and preferences.
-
-Health Connect permissions are optional. You can revoke them in Android settings. Clear IZUN's storage in Android settings to remove its local data. Manage any exported nutrition records separately in Health Connect.
-
-Anything you send to an external chatbot is handled by that service. You can enter meals by hand or use the sample report without sending anything to a chatbot. The tutorial uses example data and a generated breakfast image.
+</details>
