@@ -1,6 +1,7 @@
 package com.example.caloriescounter.ui.main
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.ScrollState
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.activity.ComponentActivity
@@ -10,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -26,12 +26,13 @@ import com.example.caloriescounter.data.FoodJsonParser
 import com.example.caloriescounter.data.MealDatabase
 import com.example.caloriescounter.data.MealRepository
 import com.example.caloriescounter.ui.MealScreen
-import com.example.caloriescounter.ui.PreviewCard
+import com.example.caloriescounter.ui.MealNameField
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assume.assumeFalse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -43,14 +44,15 @@ class MealDraftTest {
     fun importedMealNameCanBeScrolledWithoutChangingIt() {
         val name = "Roasted vegetable, chickpea, and quinoa bowl with lemon tahini dressing and toasted pumpkin seeds"
         val meal = FoodJsonParser.parse("""{"name":"$name","energy_kcal":480}""")
+        val scroll = ScrollState(0)
         compose.setContent {
-            PreviewCard(meal = meal, onMealChanged = {}, manualEntryMode = true, syncLoading = false, onSyncClick = {})
+            MealNameField(meal, onMealChanged = {}, scrollState = scroll)
         }
 
         val field = compose.onNode(hasSetTextAction() and hasText("Meal name"))
-        val scroll = field.fetchSemanticsNode().config[SemanticsProperties.HorizontalScrollAxisRange]
+        compose.runOnIdle { assertEquals(0, scroll.value) }
         field.performTouchInput { swipeLeft() }
-        compose.waitUntil { scroll.value() > 0f }
+        compose.runOnIdle { assertTrue(scroll.value > 0) }
         compose.onNode(hasSetTextAction() and hasText(name)).assertIsDisplayed()
     }
 

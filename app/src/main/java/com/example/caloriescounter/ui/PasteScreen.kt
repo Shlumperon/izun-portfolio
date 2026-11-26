@@ -13,6 +13,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.layout.Arrangement
@@ -479,22 +480,7 @@ fun PreviewCard(
             // Meal Name
             if (manualEntryMode) {
                 key(meal.healthConnectClientRecordId) {
-                    val name = rememberTextFieldState(initialText = meal.name, initialSelection = TextRange.Zero)
-                    val currentMeal by rememberUpdatedState(meal)
-                    val updateMeal by rememberUpdatedState(onMealChanged)
-                    LaunchedEffect(name) {
-                        snapshotFlow { name.text.toString() }.collect { text ->
-                            if (text != currentMeal.name) updateMeal(currentMeal.copy(name = text))
-                        }
-                    }
-                    OutlinedTextField(
-                        state = name,
-                        label = { Text("Meal name") },
-                        isError = highlightName,
-                        lineLimits = TextFieldLineLimits.SingleLine,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                    MealNameField(meal, onMealChanged, isError = highlightName)
                 }
             } else if (isEditingName) {
                 OutlinedTextField(
@@ -759,6 +745,33 @@ fun PreviewCard(
             }
         }
     }
+}
+
+@Composable
+internal fun MealNameField(
+    meal: MealRecord,
+    onMealChanged: (MealRecord) -> Unit,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+    scrollState: ScrollState = rememberScrollState()
+) {
+    val name = rememberTextFieldState(initialText = meal.name, initialSelection = TextRange.Zero)
+    val currentMeal by rememberUpdatedState(meal)
+    val updateMeal by rememberUpdatedState(onMealChanged)
+    LaunchedEffect(name) {
+        snapshotFlow { name.text.toString() }.collect { text ->
+            if (text != currentMeal.name) updateMeal(currentMeal.copy(name = text))
+        }
+    }
+    OutlinedTextField(
+        state = name,
+        label = { Text("Meal name") },
+        isError = isError,
+        lineLimits = TextFieldLineLimits.SingleLine,
+        scrollState = scrollState,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    )
 }
 
 @Composable
