@@ -67,6 +67,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.caloriescounter.data.FoodJsonParser
 import com.example.caloriescounter.data.HealthConnectManager
 import com.example.caloriescounter.data.MealRecord
@@ -101,6 +102,12 @@ fun PasteScreen(
     var syncLoading by remember { mutableStateOf(false) }
     var showInstructions by remember { mutableStateOf(false) }
     val cardBringIntoViewRequester = remember { BringIntoViewRequester() }
+
+    fun showMealMessage(message: String, duration: Int) {
+        ContextCompat.getMainExecutor(context).execute {
+            Toast.makeText(context, message, duration).show()
+        }
+    }
 
     fun emptyManualMeal(now: Long = System.currentTimeMillis()): MealRecord {
         return MealRecord(
@@ -166,7 +173,7 @@ fun PasteScreen(
             setActiveMeal(pastedMeal)
             resetValidation()
         } else {
-            Toast.makeText(context, "Could not read the pasted meal", Toast.LENGTH_LONG).show()
+            showMealMessage("Could not read the pasted meal", Toast.LENGTH_LONG)
         }
     }
 
@@ -303,7 +310,7 @@ fun PasteScreen(
                                 syncLoading = false
                                 highlightName = missingName
                                 highlightCalories = missingCalories
-                                Toast.makeText(context, "Meal name and calories are required", Toast.LENGTH_LONG).show()
+                                showMealMessage("Meal name and calories are required", Toast.LENGTH_LONG)
                                 cardBringIntoViewRequester.bringIntoView()
                                 return@launch
                             }
@@ -315,13 +322,13 @@ fun PasteScreen(
                                 setActiveMeal(local)
                                 val synced = attemptSync && mealRepository.syncSavedMeal(local, healthConnectManager)
                                 val message = if (synced) "Meal saved and synced." else "Saved on this device."
-                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                showMealMessage(message, Toast.LENGTH_SHORT)
                                 setActiveMeal(null)
                                 onMealCompleted()
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (_: Exception) {
-                                Toast.makeText(context, "Unable to finish saving this meal. Try again.", Toast.LENGTH_LONG).show()
+                                showMealMessage("Unable to finish saving this meal. Try again.", Toast.LENGTH_LONG)
                             } finally {
                                 syncLoading = false
                             }
