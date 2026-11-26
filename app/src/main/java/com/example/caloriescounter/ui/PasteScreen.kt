@@ -13,6 +13,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,8 +43,6 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +53,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -64,10 +67,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.caloriescounter.theme.IzunCard
 import com.example.caloriescounter.data.FoodJsonParser
 import com.example.caloriescounter.data.HealthConnectManager
 import com.example.caloriescounter.data.MealRecord
@@ -230,12 +235,10 @@ fun PasteScreen(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Card(
+            IzunCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -438,16 +441,10 @@ fun PreviewCard(
         )
     }
 
-    Card(
+    IzunCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(24.dp)),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -481,18 +478,24 @@ fun PreviewCard(
 
             // Meal Name
             if (manualEntryMode) {
-                OutlinedTextField(
-                    value = nameInput,
-                    onValueChange = {
-                        nameInput = it
-                        onMealChanged(meal.copy(name = it))
-                    },
-                    isError = highlightName,
-                    label = { Text("Meal name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true
-                )
+                key(meal.healthConnectClientRecordId) {
+                    val name = rememberTextFieldState(initialText = meal.name, initialSelection = TextRange.Zero)
+                    val currentMeal by rememberUpdatedState(meal)
+                    val updateMeal by rememberUpdatedState(onMealChanged)
+                    LaunchedEffect(name) {
+                        snapshotFlow { name.text.toString() }.collect { text ->
+                            if (text != currentMeal.name) updateMeal(currentMeal.copy(name = text))
+                        }
+                    }
+                    OutlinedTextField(
+                        state = name,
+                        label = { Text("Meal name") },
+                        isError = highlightName,
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             } else if (isEditingName) {
                 OutlinedTextField(
                     value = nameInput,

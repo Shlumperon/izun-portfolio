@@ -36,8 +36,6 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.caloriescounter.theme.IzunCard
 import com.example.caloriescounter.data.HealthConnectManager
 import com.example.caloriescounter.data.MealRecord
 import com.example.caloriescounter.data.MealRepository
@@ -94,7 +93,6 @@ fun MealScreen(
     healthConnectManager: HealthConnectManager,
     addMealDraft: MealRecord?,
     onAddMealDraftChanged: (MealRecord?) -> Unit,
-    onHistoryPermissionNeeded: () -> Unit,
     tutorialState: MealTutorialState? = null,
     onTutorialAddConfirmed: () -> Unit = {},
     onTutorialMealDeleted: () -> Unit = {},
@@ -154,14 +152,10 @@ fun MealScreen(
             enter = fadeIn(tween(180)) + expandVertically(tween(220)),
             exit = fadeOut(tween(120)) + shrinkVertically(tween(180))
         ) {
-            Card(
+            IzunCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f)
-                )
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -235,7 +229,6 @@ fun MealScreen(
                         HistoryScreen(
                             mealRepository = mealRepository,
                             healthConnectManager = healthConnectManager,
-                            onPermissionNeeded = onHistoryPermissionNeeded,
                             showHeader = false,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -272,11 +265,8 @@ private fun TutorialAddMealCard(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            IzunCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -396,11 +386,8 @@ private fun TutorialHistoryMealCard(
             )
         }
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            IzunCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -453,11 +440,8 @@ private fun TutorialHistorySummaryCard(
     subtitle: String,
     calories: String
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    IzunCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier

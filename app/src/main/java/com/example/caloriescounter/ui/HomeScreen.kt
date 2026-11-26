@@ -50,9 +50,6 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -88,7 +85,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.window.Dialog
+import com.example.caloriescounter.theme.IzunCard
 import com.example.caloriescounter.data.DailyHealthSummary
 import com.example.caloriescounter.data.DailyStepTotal
 import com.example.caloriescounter.data.HealthConnectManager
@@ -167,7 +167,6 @@ fun HomeScreen(
     healthConnectManager: HealthConnectManager,
     weightRepository: WeightRepository,
     userProfileRepository: UserProfileRepository,
-    onPermissionNeeded: () -> Unit,
     demoData: HomeDemoData? = null,
     bottomContentPadding: Dp = 20.dp,
     modifier: Modifier = Modifier
@@ -192,6 +191,7 @@ fun HomeScreen(
     var showProfileDetails by remember { mutableStateOf(false) }
     val weightSamples = remember(weightRefreshKey, demoData) { demoData?.weightSamples ?: weightRepository.getSamples() }
 
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { healthRefreshKey++ }
     LaunchedEffect(healthRefreshKey, demoData) {
         if (demoData != null) {
             healthSummary = demoData.healthSummary
@@ -352,8 +352,6 @@ fun HomeScreen(
                         }
                     }
                 },
-                onPermissionNeeded = onPermissionNeeded,
-                onRefresh = { healthRefreshKey++ }
             )
         }
         item {
@@ -447,10 +445,7 @@ private fun ProfileDetailsDialog(
     var errorText by remember { mutableStateOf<String?>(null) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
+        IzunCard {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1366,10 +1361,8 @@ private fun WeightDataCard(
 ) {
     var selectedTimestamp by remember(samples) { mutableStateOf<Long?>(null) }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f))
+    IzunCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -1446,10 +1439,7 @@ private fun WeightEditDialog(
     var errorText by remember { mutableStateOf<String?>(null) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
+        IzunCard {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -1511,9 +1501,7 @@ private fun StepsCard(
     weeklySteps: List<DailyStepTotal>,
     stepGoal: Int,
     dateLabel: String,
-    onStepGoalChanged: (Int) -> Unit,
-    onPermissionNeeded: () -> Unit,
-    onRefresh: () -> Unit
+    onStepGoalChanged: (Int) -> Unit
 ) {
     val distanceKm = summary.distanceKm ?: summary.steps * KM_PER_STEP
     var showWeeklyGraph by remember { mutableStateOf(false) }
@@ -1566,22 +1554,10 @@ private fun StepsCard(
                         .clickable { showGoalEditor = !showGoalEditor }
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                 )
-                if (summary.hasReadPermission) {
-                    Text(
-                        text = "Refresh",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 13.sp,
-                        modifier = Modifier.clickable { onRefresh() }
-                    )
-                } else {
-                    Button(onClick = onPermissionNeeded) {
-                        Text("Connect")
-                    }
-                }
             }
             summary.errorMessage?.let {
                 Text(
-                    text = if (summary.hasReadPermission) "Could not refresh health data" else "Health data is not connected yet",
+                    text = if (summary.hasReadPermission) "Could not refresh health data" else "Set up activity access in Settings > Health Connect",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f),
                     fontSize = 12.sp
                 )
@@ -1651,10 +1627,8 @@ private fun StepGoalPicker(
     var fifty by remember(currentGoal) { mutableIntStateOf(if (currentGoal % 100 >= 50) 1 else 0) }
     val goal = (thousands * 1000 + hundreds * 100 + fifty * 50).coerceAtLeast(1000)
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f))
+    IzunCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -1967,11 +1941,8 @@ private fun DashboardCard(
     action: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    IzunCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),

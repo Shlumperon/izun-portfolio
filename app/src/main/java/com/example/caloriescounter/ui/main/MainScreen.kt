@@ -5,7 +5,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.saveable.rememberSaveable
 import android.content.Context
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -34,8 +33,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -67,7 +64,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
-import androidx.health.connect.client.PermissionController
+import com.example.caloriescounter.theme.IzunCard
 import com.example.caloriescounter.BuildConfig
 import com.example.caloriescounter.R
 import com.example.caloriescounter.data.HealthConnectManager
@@ -81,6 +78,7 @@ import com.example.caloriescounter.data.WeightSample
 import com.example.caloriescounter.data.WeightRepository
 import com.example.caloriescounter.ui.HomeDemoData
 import com.example.caloriescounter.ui.HomeScreen
+import com.example.caloriescounter.ui.HealthConnectDialog
 import com.example.caloriescounter.ui.MealScreen
 import com.example.caloriescounter.ui.MealTutorialMode
 import com.example.caloriescounter.ui.MealTutorialState
@@ -92,10 +90,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 private const val HEALTH_PERMISSION_PREFS = "health_permission_onboarding"
-private const val KEY_NUTRITION_PERMISSION_REQUESTED = "nutrition_permission_requested"
-private const val KEY_EDIT_PERMISSION_REQUESTED = "edit_permission_requested"
-private const val KEY_DASHBOARD_PERMISSION_REQUESTED = "dashboard_permission_requested"
-private const val KEY_CHAT_PROMPT_COPIED = "chat_prompt_copied"
 private const val KEY_LANDING_TUTORIAL_COMPLETED = "landing_tutorial_completed"
 
 private enum class LandingTutorialStep {
@@ -108,7 +102,8 @@ private enum class LandingTutorialStep {
     CHATBOT_OUTPUT,
     CHATBOT_ADD_PROMPT,
     RAMEN_ADD,
-    FINISH_HOME
+    FINISH_HOME,
+    HEALTH_CONNECT
 }
 
 internal class MealDraftViewModel : ViewModel() {
@@ -134,12 +129,12 @@ fun MainScreen(
 
     var selectedTab by rememberSaveable { mutableIntStateOf(HOME_TAB) }
     var showSplash by remember { mutableStateOf(true) }
-    var pendingPermissionRequest by remember { mutableStateOf(emptySet<String>()) }
+    var showHealthConnectSettings by rememberSaveable { mutableStateOf(false) }
     var profileCreated by remember { mutableStateOf(userProfileRepository.hasProfile()) }
     var showProfileWelcome by remember { mutableStateOf(false) }
     var showProfileCreation by remember { mutableStateOf(false) }
     val mealDraft: MealDraftViewModel = viewModel()
-    var landingTutorialStep by remember { mutableStateOf<LandingTutorialStep?>(null) }
+    var landingTutorialStep by rememberSaveable { mutableStateOf<LandingTutorialStep?>(null) }
     var tutorialAddStage by remember { mutableIntStateOf(0) }
     var tutorialHistoryMealVisible by remember { mutableStateOf(true) }
     var tutorialHistoryExpanded by remember { mutableStateOf(false) }
@@ -148,47 +143,8 @@ fun MainScreen(
     var tutorialCoachReadyForConfirm by remember { mutableStateOf(false) }
     var chatPromptCopyStreak by remember { mutableIntStateOf(0) }
     var showDeveloperControls by remember { mutableStateOf(false) }
-    var chatPromptCopied by remember {
-        mutableStateOf(permissionPrefs.getBoolean(KEY_CHAT_PROMPT_COPIED, false))
-    }
     val tutorialActive = landingTutorialStep != null
     val developerControlsVisible = BuildConfig.DEBUG && showDeveloperControls
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = PermissionController.createRequestPermissionResultContract()
-    ) { granted ->
-        val hasPermission = granted.containsAll(pendingPermissionRequest)
-        Toast.makeText(
-            context,
-            if (hasPermission) "Health Connect permission granted" else "Health Connect permissions can be changed in Android settings",
-            Toast.LENGTH_LONG
-        ).show()
-
-    }
-
-    fun requestHealthPermissionOnce(
-        prefKey: String,
-        permissions: Set<String> = healthConnectManager.getRequiredPermissions(),
-        allowRepeatRequest: Boolean = false
-    ) {
-        if (!healthConnectManager.isSdkAvailable()) {
-            Toast.makeText(context, "Health Connect is not available on this device", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        if (!allowRepeatRequest && permissionPrefs.getBoolean(prefKey, false)) {
-            Toast.makeText(
-                context,
-                "Health Connect permission is still required. You can grant it from Android settings",
-                Toast.LENGTH_LONG
-            ).show()
-            return
-        }
-
-        permissionPrefs.edit { putBoolean(prefKey, true) }
-        pendingPermissionRequest = permissions
-        permissionLauncher.launch(permissions)
-    }
 
     fun resetProfileCreationForDeveloper() {
         userProfileRepository.clearProfile()
@@ -210,9 +166,7 @@ fun MainScreen(
     fun resetTutorialForDeveloper() {
         permissionPrefs.edit {
             putBoolean(KEY_LANDING_TUTORIAL_COMPLETED, false)
-            putBoolean(KEY_CHAT_PROMPT_COPIED, false)
         }
-        chatPromptCopied = false
         showProfileWelcome = false
         tutorialHistoryMealVisible = true
         tutorialHistoryExpanded = false
@@ -332,8 +286,13 @@ fun MainScreen(
             LandingTutorialStep.CHATBOT_ADD_PROMPT -> Unit
             LandingTutorialStep.RAMEN_ADD -> Unit
             LandingTutorialStep.FINISH_HOME -> {
+                selectedTab = SETTINGS_TAB
+                landingTutorialStep = LandingTutorialStep.HEALTH_CONNECT
+            }
+            LandingTutorialStep.HEALTH_CONNECT -> {
                 permissionPrefs.edit { putBoolean(KEY_LANDING_TUTORIAL_COMPLETED, true) }
                 landingTutorialStep = null
+                selectedTab = HOME_TAB
             }
             null -> Unit
         }
@@ -427,13 +386,6 @@ fun MainScreen(
                     healthConnectManager = healthConnectManager,
                     weightRepository = weightRepository,
                     userProfileRepository = userProfileRepository,
-                    onPermissionNeeded = {
-                        requestHealthPermissionOnce(
-                            KEY_DASHBOARD_PERMISSION_REQUESTED,
-                            healthConnectManager.getDashboardReadPermissions(),
-                            allowRepeatRequest = true
-                        )
-                    },
                     demoData = demoHomeData,
                     bottomContentPadding = tutorialContentClearance
                 )
@@ -442,9 +394,6 @@ fun MainScreen(
                     healthConnectManager = healthConnectManager,
                     addMealDraft = mealDraft.draft,
                     onAddMealDraftChanged = { mealDraft.draft = it },
-                    onHistoryPermissionNeeded = {
-                        requestHealthPermissionOnce(KEY_EDIT_PERMISSION_REQUESTED)
-                    },
                     tutorialState = mealTutorialState,
                     tutorialBottomPadding = tutorialContentClearance,
                     onTutorialAddModeSelected = {
@@ -469,14 +418,9 @@ fun MainScreen(
                     }
                 )
                 SETTINGS_TAB -> SettingsScreen(
-                    chatPromptCopied = chatPromptCopied,
                     showDeveloperControls = developerControlsVisible,
-                    onConnectNutrition = {
-                        requestHealthPermissionOnce(KEY_NUTRITION_PERMISSION_REQUESTED, allowRepeatRequest = true)
-                    },
+                    onOpenHealthConnect = { showHealthConnectSettings = true },
                     onChatPromptCopied = {
-                        permissionPrefs.edit { putBoolean(KEY_CHAT_PROMPT_COPIED, true) }
-                        chatPromptCopied = true
                         if (BuildConfig.DEBUG) {
                             chatPromptCopyStreak += 1
                             if (chatPromptCopyStreak >= 5) {
@@ -504,7 +448,7 @@ fun MainScreen(
                         },
                         modifier = Modifier.align(Alignment.Center)
                     )
-                } else {
+                } else if (step != LandingTutorialStep.HEALTH_CONNECT) {
                     TutorialCoachCard(
                         step = step,
                         addStage = if (tutorialCoachReadyForConfirm) 3 else 0,
@@ -523,6 +467,18 @@ fun MainScreen(
                 )
             }
         }
+    }
+
+    val tutorialPermissions = landingTutorialStep == LandingTutorialStep.HEALTH_CONNECT
+    if (tutorialPermissions || showHealthConnectSettings) {
+        HealthConnectDialog(
+            manager = healthConnectManager,
+            inTutorial = tutorialPermissions,
+            onDismiss = {
+                showHealthConnectSettings = false
+                if (tutorialPermissions) advanceTutorial()
+            }
+        )
     }
 }
 
@@ -602,19 +558,15 @@ private fun TutorialCoachCard(
         )
         LandingTutorialStep.FINISH_HOME -> TutorialCopy(
             "Back to Home",
-            "See how the daily calorie target was reached? Don't worry these meals won't be registered",
-            "Finish",
+            "These sample meals show how your dashboard adds up a day. One last step lets you choose whether to connect activity and nutrition data.",
+            "Continue",
             true
         )
+        LandingTutorialStep.HEALTH_CONNECT -> return
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE6F6EA).copy(alpha = 0.96f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    IzunCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -647,13 +599,10 @@ private fun ChatbotExampleCard(
     onCopyReport: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    IzunCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+            .padding(horizontal = 18.dp)
     ) {
         Column(
             modifier = Modifier
@@ -733,18 +682,15 @@ IZUN Report
 }
 """.trimIndent()
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    IzunCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(
             text = reportText,
             fontFamily = FontFamily.Monospace,
             fontSize = 8.sp,
             lineHeight = 10.sp,
-            color = Color(0xFF0F172A),
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(12.dp)
         )
     }
@@ -913,13 +859,10 @@ private fun ProfileWelcomeScreen(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Card(
+        IzunCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .padding(horizontal = 16.dp)
         ) {
             Column(
                 modifier = Modifier.padding(22.dp),

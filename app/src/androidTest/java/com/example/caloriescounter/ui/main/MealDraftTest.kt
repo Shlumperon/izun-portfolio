@@ -10,18 +10,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.example.caloriescounter.data.HealthConnectManager
+import com.example.caloriescounter.data.FoodJsonParser
 import com.example.caloriescounter.data.MealDatabase
 import com.example.caloriescounter.data.MealRepository
 import com.example.caloriescounter.ui.MealScreen
+import com.example.caloriescounter.ui.PreviewCard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -33,6 +38,21 @@ import org.junit.Test
 class MealDraftTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Test
+    fun importedMealNameCanBeScrolledWithoutChangingIt() {
+        val name = "Roasted vegetable, chickpea, and quinoa bowl with lemon tahini dressing and toasted pumpkin seeds"
+        val meal = FoodJsonParser.parse("""{"name":"$name","energy_kcal":480}""")
+        compose.setContent {
+            PreviewCard(meal = meal, onMealChanged = {}, manualEntryMode = true, syncLoading = false, onSyncClick = {})
+        }
+
+        val field = compose.onNode(hasSetTextAction() and hasText("Meal name"))
+        val scroll = field.fetchSemanticsNode().config[SemanticsProperties.HorizontalScrollAxisRange]
+        field.performTouchInput { swipeLeft() }
+        compose.waitUntil { scroll.value() > 0f }
+        compose.onNode(hasSetTextAction() and hasText(name)).assertIsDisplayed()
+    }
 
     @Test
     fun mealDraftSurvivesTabChangesAndSavesWithoutHealthConnect() {
@@ -77,8 +97,7 @@ class MealDraftTest {
                         mealRepository = repository,
                         healthConnectManager = health,
                         addMealDraft = state.draft,
-                        onAddMealDraftChanged = { state.draft = it },
-                        onHistoryPermissionNeeded = {}
+                        onAddMealDraftChanged = { state.draft = it }
                     )
                 }
             }

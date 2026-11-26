@@ -88,48 +88,30 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
-    suspend fun hasWritePermission(): Boolean {
-        val client = healthConnectClient ?: return false
+    suspend fun grantedPermissions(): Set<String> {
+        val client = healthConnectClient ?: return emptySet()
         return try {
-            val granted = client.permissionController.getGrantedPermissions()
-            granted.contains(HealthPermission.getWritePermission(NutritionRecord::class))
-        } catch (e: Exception) {
-            false
+            client.permissionController.getGrantedPermissions()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            emptySet()
         }
     }
 
-    suspend fun hasDashboardReadPermission(): Boolean {
-        val client = healthConnectClient ?: return false
-        return try {
-            val granted = client.permissionController.getGrantedPermissions()
-            granted.containsAll(getDashboardReadPermissions())
-        } catch (e: Exception) {
-            false
-        }
-    }
+    val nutritionPermission = HealthPermission.getWritePermission(NutritionRecord::class)
+    private val stepsPermission = HealthPermission.getReadPermission(StepsRecord::class)
 
-    private suspend fun hasStepReadPermission(): Boolean {
-        val client = healthConnectClient ?: return false
-        return try {
-            val granted = client.permissionController.getGrantedPermissions()
-            granted.contains(HealthPermission.getReadPermission(StepsRecord::class))
-        } catch (e: Exception) {
-            false
-        }
-    }
+    val activityPermissions = setOf(
+        stepsPermission,
+        HealthPermission.getReadPermission(ExerciseSessionRecord::class),
+        HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class),
+        HealthPermission.getReadPermission(DistanceRecord::class)
+    )
 
-    fun getRequiredPermissions(): Set<String> {
-        return setOf(HealthPermission.getWritePermission(NutritionRecord::class))
-    }
+    suspend fun hasWritePermission(): Boolean = nutritionPermission in grantedPermissions()
 
-    fun getDashboardReadPermissions(): Set<String> {
-        return setOf(
-            HealthPermission.getReadPermission(StepsRecord::class),
-            HealthPermission.getReadPermission(ExerciseSessionRecord::class),
-            HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class),
-            HealthPermission.getReadPermission(DistanceRecord::class)
-        )
-    }
+    private suspend fun hasStepReadPermission(): Boolean = stepsPermission in grantedPermissions()
 
     suspend fun readDailyHealthSummary(date: LocalDate = LocalDate.now()): DailyHealthSummary {
         val client = healthConnectClient

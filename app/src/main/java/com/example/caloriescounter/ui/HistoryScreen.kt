@@ -33,8 +33,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import com.example.caloriescounter.theme.IzunCard
 import com.example.caloriescounter.data.HealthConnectManager
 import com.example.caloriescounter.data.newMealOccurrence
 import com.example.caloriescounter.data.MealRecord
@@ -78,7 +78,6 @@ private data class NutrientColorCandidate(
 fun HistoryScreen(
     mealRepository: MealRepository,
     healthConnectManager: HealthConnectManager,
-    onPermissionNeeded: () -> Unit = {},
     showHeader: Boolean = true,
     modifier: Modifier = Modifier
 ) {
@@ -360,7 +359,9 @@ fun HistoryScreen(
                                     val needsRemoteDelete = meal.healthConnectClientRecordId.isNotBlank() &&
                                         (meal.healthConnectSynced || meal.healthConnectClientRecordVersion > 0)
                                     if (needsRemoteDelete && healthConnectManager.isSdkAvailable() && !healthConnectManager.hasWritePermission()) {
-                                        onPermissionNeeded()
+                                        ContextCompat.getMainExecutor(context).execute {
+                                            Toast.makeText(context, "Allow nutrition access in Settings > Health Connect to remove this synced meal.", Toast.LENGTH_LONG).show()
+                                        }
                                         return@launch
                                     }
                                     val result = healthConnectManager.deleteMeal(meal)
@@ -400,19 +401,12 @@ fun HistoryItemCard(
     val localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(meal.timestamp), ZoneId.systemDefault())
     val dominantNutrientColor = meal.dominantNutrientColor()
 
-    Card(
+    IzunCard(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize()
-            .clip(RoundedCornerShape(18.dp))
-            .clickable { onExpandClick() },
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onExpandClick).padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically

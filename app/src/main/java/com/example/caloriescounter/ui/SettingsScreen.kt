@@ -3,11 +3,6 @@ package com.example.caloriescounter.ui
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,15 +31,12 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,14 +46,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.caloriescounter.theme.IzunCard
 import com.example.caloriescounter.theme.ThemePalette
 import com.example.caloriescounter.theme.ThemeState
 
 @Composable
 fun SettingsScreen(
-    chatPromptCopied: Boolean = false,
     showDeveloperControls: Boolean = false,
-    onConnectNutrition: () -> Unit,
+    onOpenHealthConnect: () -> Unit,
     onChatPromptCopied: () -> Unit = {},
     onResetProfileCreation: () -> Unit = {},
     onResetTutorial: () -> Unit = {},
@@ -70,16 +62,6 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    val highlightTransition = rememberInfiniteTransition(label = "chatPromptHighlight")
-    val chatPromptHighlightAlpha by highlightTransition.animateFloat(
-        initialValue = 0.24f,
-        targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 850),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "chatPromptHighlightAlpha"
-    )
 
     val chatGptPrompt = """
 You are helping me add meals to IZUN.
@@ -154,6 +136,19 @@ When I share a meal or image, respond in two sections:
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        SettingsCard(title = "Health Connect", icon = Icons.Default.Info) {
+            Text(
+                text = "Manage optional activity access and nutrition sync.",
+                fontSize = 13.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Button(onClick = onOpenHealthConnect, modifier = Modifier.fillMaxWidth()) {
+                Text("Manage Health Connect")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // SECTION: THEME CUSTOMIZATION
         SettingsCard(title = "App Customization", icon = Icons.Default.Palette) {
             // Dark Mode Switch
@@ -219,19 +214,7 @@ When I share a meal or image, respond in two sections:
         Spacer(modifier = Modifier.height(16.dp))
 
         // SECTION: CHATGPT PROMPT COPIER
-        SettingsCard(
-            title = "Chat Prompt",
-            icon = Icons.Default.Info,
-            modifier = if (!chatPromptCopied) {
-                Modifier.border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = chatPromptHighlightAlpha),
-                    shape = RoundedCornerShape(20.dp)
-                )
-            } else {
-                Modifier
-            }
-        ) {
+        SettingsCard(title = "Chat Prompt", icon = Icons.Default.Info) {
             Text(
                 text = "Copy the prompt into a chatbot to get a meal estimate. In IZUN, open Meal > Add, tap Paste, and review the report before confirming. The chatbot can receive whatever you share with it, including photos. Only share details you are comfortable sending to that service.",
                 fontSize = 13.sp,
@@ -257,17 +240,6 @@ When I share a meal or image, respond in two sections:
                 Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Copy Chat Prompt")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        SettingsCard(title = "Health Connect", icon = Icons.Default.Info) {
-            Text(
-                text = "Optionally save nutrition records to Health Connect when you confirm a meal. Manage or revoke access in Android settings.",
-                fontSize = 13.sp
-            )
-            Button(onClick = onConnectNutrition, modifier = Modifier.fillMaxWidth()) {
-                Text("Connect nutrition")
             }
         }
 
@@ -321,14 +293,11 @@ fun SettingsCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
+    IzunCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .then(modifier),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .then(modifier)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
