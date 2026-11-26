@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -22,37 +22,22 @@ jobs:
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
         with:
           cache-disabled: true
-      - name: Install Android SDK packages
-        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Run unit tests, lint, and build the APKs
-        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease
-
-  device-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30eaf803 # v6
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
-        with:
-          cache-disabled: true
+        run: ./gradlew --max-workers=2 :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease
       - name: Run tests on an Android emulator
         run: |
-          sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'emulator' 'system-images;android-30;default;x86_64'
+          tools=$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' | sort -V | tail -1)
+          "$tools" 'emulator' 'system-images;android-30;default;x86_64'
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
           sudo chown "$USER" /dev/kvm
-          avdmanager create avd -n izun-tests -k 'system-images;android-30;default;x86_64' <<< no
+          "${tools%/*}/avdmanager" create avd -n izun-tests -k 'system-images;android-30;default;x86_64' <<< no
           "$ANDROID_HOME/emulator/emulator" @izun-tests -no-window -no-audio -no-snapshot -gpu swiftshader > "$RUNNER_TEMP/izun-emulator.log" 2>&1 &
           timeout 240 bash -c 'adb wait-for-device; until [[ $(adb shell getprop sys.boot_completed | tr -d "\r") == 1 ]]; do sleep 2; done'
           adb shell input keyevent 82
           adb shell settings put global window_animation_scale 0
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
-          ./gradlew :app:connectedDebugAndroidTest
+          ./gradlew --max-workers=2 :app:connectedDebugAndroidTest
       - name: Print emulator log on failure
         if: failure()
         run: tail -100 "$RUNNER_TEMP/izun-emulator.log" || true
