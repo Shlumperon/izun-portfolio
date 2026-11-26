@@ -1,0 +1,194 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "53a569d6053ec634619e3d54ece4a672",
+    "entities": [
+      {
+        "tableName": "meals",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `mealType` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `endTimestamp` INTEGER NOT NULL DEFAULT 0, `calories` REAL NOT NULL, `protein` REAL, `carbs` REAL, `fat` REAL, `fiber` REAL, `sugar` REAL, `saturatedFat` REAL, `unsaturatedFat` REAL, `transFat` REAL, `sodium` REAL, `potassium` REAL, `cholesterol` REAL, `calcium` REAL, `iron` REAL, `magnesium` REAL, `zinc` REAL, `vitaminA` REAL, `vitaminC` REAL, `vitaminD` REAL, `vitaminE` REAL, `caffeine` REAL, `healthConnectSynced` INTEGER NOT NULL DEFAULT 0, `lastSyncError` TEXT, `healthConnectClientRecordId` TEXT NOT NULL DEFAULT '', `healthConnectClientRecordVersion` INTEGER NOT NULL DEFAULT 0, `rawJson` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealType",
+            "columnName": "mealType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTimestamp",
+            "columnName": "endTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "calories",
+            "columnName": "calories",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "protein",
+            "columnName": "protein",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "carbs",
+            "columnName": "carbs",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "fat",
+            "columnName": "fat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "fiber",
+            "columnName": "fiber",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "sugar",
+            "columnName": "sugar",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "saturatedFat",
+            "columnName": "saturatedFat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "unsaturatedFat",
+            "columnName": "unsaturatedFat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "transFat",
+            "columnName": "transFat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "sodium",
+            "columnName": "sodium",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "potassium",
+            "columnName": "potassium",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "cholesterol",
+            "columnName": "cholesterol",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "calcium",
+            "columnName": "calcium",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "iron",
+            "columnName": "iron",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "magnesium",
+            "columnName": "magnesium",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "zinc",
+            "columnName": "zinc",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "vitaminA",
+            "columnName": "vitaminA",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "vitaminC",
+            "columnName": "vitaminC",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "vitaminD",
+            "columnName": "vitaminD",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "vitaminE",
+            "columnName": "vitaminE",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "caffeine",
+            "columnName": "caffeine",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "healthConnectSynced",
+            "columnName": "healthConnectSynced",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "lastSyncError",
+            "columnName": "lastSyncError",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "healthConnectClientRecordId",
+            "columnName": "healthConnectClientRecordId",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "healthConnectClientRecordVersion",
+            "columnName": "healthConnectClientRecordVersion",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "rawJson",
+            "columnName": "rawJson",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '53a569d6053ec634619e3d54ece4a672')"
+    ]
+  }
+}
